@@ -1,0 +1,215 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Edit Term{% endblock %}
+
+{% block body_class %}sidebar-mini{% endblock %}
+
+{% block stylesheets %}
+<!-- Fonts & Icons -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+<link rel="stylesheet" href="/static/assets/plugins/fontawesome-free/css/all.min.css">
+<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+<!-- Theme -->
+<link rel="stylesheet" href="/static/assets/css/adminlte.min.css">
+
+<!-- Flash Message Styles -->
+<style>
+  .alert-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    max-width: 600px;
+    width: 90%;
+    display: none;
+  }
+  .alert {
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+    margin-bottom: 10px;
+    padding: 0.75rem 1.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+  }
+  .alert i {
+    font-size: 1.2rem;
+    margin-right: 10px;
+  }
+  .alert .close {
+    margin-left: auto;
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  /* Add some red color for invalid inputs */
+  .is-invalid {
+    border-color: red;
+  }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="content-wrapper">
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="alert-container" id="flashMessageContainer">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            <i class="fas fa-{{
+              'check-circle' if category == 'success'
+              else 'exclamation-circle' if category == 'warning'
+              else 'times-circle' if category == 'danger'
+              else 'info-circle' }}"></i>
+            <span>{{ message }}</span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Page Header -->
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1>Edit Term</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/index">Home</a></li>
+            <li class="breadcrumb-item"><a href="/terms">Terms</a></li>
+            <li class="breadcrumb-item active">Edit Term</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <section class="content">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12">
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Edit Term Details</h3>
+            </div>
+
+            <div class="card-body">
+              <form action="{{ url_for('term_blueprint.edit_term', term_id=term.term_id) }}" method="POST" class="form-horizontal" id="editTermForm">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+                <!-- Term Name -->
+                <div class="row mb-3">
+                  <label for="term_name" class="col-sm-2 col-form-label">Term Name:</label>
+                  <div class="col-sm-10">
+                    <input type="text" name="term_name" class="form-control" value="{{ term.term_name }}" maxlength="20" required>
+                    <div class="invalid-feedback">Term name is required!</div>
+                  </div>
+                </div>
+
+                <!-- Start Date -->
+                <div class="row mb-3">
+                  <label for="start_on" class="col-sm-2 col-form-label">Start Date:</label>
+                  <div class="col-sm-10">
+                    <input type="date" name="start_on" class="form-control" value="{{ term.start_on | string }}" required>
+                    <div class="invalid-feedback">Start date is required!</div>
+                  </div>
+                </div>
+
+                <!-- End Date -->
+                <div class="row mb-3">
+                  <label for="ends_on" class="col-sm-2 col-form-label">End Date:</label>
+                  <div class="col-sm-10">
+                    <input type="date" name="ends_on" class="form-control" value="{{ term.ends_on | string }}" required>
+                    <div class="invalid-feedback">End date is required!</div>
+                  </div>
+                </div>
+
+                <!-- Academic Year -->
+                <div class="row mb-3">
+                  <label for="year_id" class="col-sm-2 col-form-label">Academic Year:</label>
+                  <div class="col-sm-10">
+                    <select name="year_id" class="form-control" required>
+                      <option value="">-- Select Year --</option>
+                      {% for year in years %}
+                        <option value="{{ year.year_id }}" {% if year.year_id == term.year_id %}selected{% endif %}>{{ year.year_name }}</option>
+                      {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">Academic year is required!</div>
+                  </div>
+                </div>
+
+                <!-- Status (Active/Inactive) -->
+                <div class="row mb-3">
+                  <label for="status" class="col-sm-2 col-form-label">Status:</label>
+                  <div class="col-sm-10">
+                    <select name="status" class="form-control" required>
+                      <option value="active" {% if term.status == 'active' %}selected{% endif %}>Active</option>
+                      <option value="inactive" {% if term.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    </select>
+                    <div class="invalid-feedback">Status is required!</div>
+                  </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-sm btn-success">Update Term</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="card-footer">
+              <small class="text-muted">Make sure term dates and year are accurate.</small>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script src="/static/assets/plugins/jquery/jquery.min.js"></script>
+<script src="/static/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/static/assets/js/adminlte.min.js"></script>
+<script>
+  $(document).ready(function () {
+    const $flash = $('#flashMessageContainer');
+    if ($flash.length) {
+      $flash.fadeIn(400).delay(3500).fadeOut(600);
+    }
+
+    // Form Validation: Check required fields
+    $('#editTermForm').submit(function (e) {
+      let isValid = true;
+
+      // Loop through all the required fields
+      $('input[required], select[required]').each(function() {
+        if (!this.value) {
+          $(this).addClass('is-invalid');
+          isValid = false;
+        } else {
+          $(this).removeClass('is-invalid');
+        }
+      });
+
+      // Prevent form submission if there are invalid fields
+      if (!isValid) {
+        e.preventDefault();
+      }
+    });
+  });
+</script>
+{% endblock javascripts %}

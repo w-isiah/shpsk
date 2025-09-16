@@ -1,0 +1,70 @@
+Thanks — your `sales` table schema shows that you're saving timestamps using the `datetime` type with:
+
+```sql
+date_updated datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+```
+
+---
+
+### ⚠️ Key Issue: MariaDB saves time in **server time (UTC)** by default
+
+PythonAnywhere's **MySQL/MariaDB server uses UTC**, so your `date_updated` values are saved in **UTC**, not your local timezone (Uganda / EAT, UTC+3).
+
+---
+
+### ✅ How to Handle This Correctly
+
+#### 1. **Keep Storing Time in UTC (Recommended)**
+
+* ✅ This is best practice. Store in UTC, then **convert to local time** (Africa/Kampala) in your Flask app **when displaying** the data.
+
+#### 2. **Convert to Uganda Time in Flask (Jinja2 or backend)**
+
+##### ➤ Option A: Convert in Flask using `pytz`
+
+Install `pytz` if not already:
+
+```bash
+pip install pytz
+```
+
+Then in your Flask app (e.g. in a route or template logic):
+
+```python
+from datetime import datetime
+import pytz
+
+# Convert UTC time from DB to local time (Africa/Kampala)
+def to_kampala_time(utc_dt):
+    utc = pytz.utc
+    kampala = pytz.timezone("Africa/Kampala")
+    return utc.localize(utc_dt).astimezone(kampala)
+```
+
+Usage:
+
+```python
+local_time = to_kampala_time(sale.date_updated)
+```
+
+---
+
+##### ➤ Option B: In a Jinja2 template
+
+You can also pass `to_kampala_time()` as a template filter or use Flask extensions like `Flask-Moment` or `Babel`.
+
+---
+
+### 🛑 Do NOT change the DB server timezone on PythonAnywhere
+
+PythonAnywhere doesn't allow changing the global DB server timezone. You must handle time conversion at the **application level**.
+
+---
+
+### ✅ Summary
+
+* Your MariaDB `datetime` fields store time in **UTC**.
+* **Keep it that way** and convert to `Africa/Kampala` using Python (Flask).
+* Use `pytz` or `zoneinfo` (Python 3.9+) for time zone conversions.
+
+Let me know if you want help writing a Jinja filter or displaying localized times on your frontend!

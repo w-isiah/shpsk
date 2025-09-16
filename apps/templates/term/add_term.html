@@ -1,0 +1,182 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Add Term{% endblock %}
+
+{% block body_class %}sidebar-mini{% endblock %}
+
+{% block stylesheets %}
+<!-- Fonts & Icons -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+<link rel="stylesheet" href="/static/assets/plugins/fontawesome-free/css/all.min.css">
+<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+<link rel="stylesheet" href="/static/assets/css/adminlte.min.css">
+
+<!-- Flash Message Styles -->
+<style>
+  .alert-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    max-width: 600px;
+    width: 90%;
+    display: none;
+  }
+  .alert {
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+    margin-bottom: 10px;
+    padding: 0.75rem 1.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+  }
+  .alert i {
+    font-size: 1.2rem;
+    margin-right: 10px;
+  }
+  .alert .close {
+    margin-left: auto;
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="alert-container" id="flashMessageContainer">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            <i class="fas fa-{{ 
+              'check-circle' if category == 'success' 
+              else 'exclamation-circle' if category == 'warning' 
+              else 'times-circle' if category == 'danger' 
+              else 'info-circle' }}"></i>
+            <span>{{ message }}</span>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Page Header -->
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1>Add Term</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/index">Home</a></li>
+            <li class="breadcrumb-item"><a href="/term">Terms</a></li>
+            <li class="breadcrumb-item active">Add Term</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <section class="content">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12">
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Add New Term</h3>
+            </div>
+
+            <div class="card-body">
+              <form action="{{ url_for('term_blueprint.add_term') }}" method="POST" class="form-horizontal">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+                <!-- Term Name -->
+                <div class="row mb-3">
+                  <label for="term_name" class="col-sm-2 col-form-label">Term Name:</label>
+                  <div class="col-sm-10">
+                    <input type="text" name="term_name" class="form-control" placeholder="e.g. Term 1" maxlength="20" required />
+                  </div>
+                </div>
+
+                <!-- Start Date -->
+                <div class="row mb-3">
+                  <label for="start_on" class="col-sm-2 col-form-label">Start Date:</label>
+                  <div class="col-sm-10">
+                    <input type="date" name="start_on" class="form-control" required />
+                  </div>
+                </div>
+
+                <!-- End Date -->
+                <div class="row mb-3">
+                  <label for="ends_on" class="col-sm-2 col-form-label">End Date:</label>
+                  <div class="col-sm-10">
+                    <input type="date" name="ends_on" class="form-control" required />
+                  </div>
+                </div>
+
+                <!-- Year ID -->
+                <div class="row mb-3">
+                  <label for="year_id" class="col-sm-2 col-form-label">Academic Year:</label>
+                  <div class="col-sm-10">
+                    <select name="year_id" class="form-control">
+                      <option value="">-- Select Year --</option>
+                      {% for year in study_years %}
+                        <option value="{{ year.year_id }}">{{ year.year_name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Status -->
+                <div class="row mb-3">
+                  <label for="status" class="col-sm-2 col-form-label">Status:</label>
+                  <div class="col-sm-10">
+                    <select name="status" class="form-control">
+                      <option value="0">Inactive</option>
+                      <option value="1">Active</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-sm btn-success">Save Term</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="card-footer">
+              <small class="text-muted">Please ensure term dates do not overlap and the name is unique per year.</small>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+<script src="/static/assets/plugins/jquery/jquery.min.js"></script>
+<script src="/static/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="/static/assets/js/adminlte.min.js"></script>
+<script>
+  $(document).ready(function () {
+    const $flash = $('#flashMessageContainer');
+    if ($flash.length) {
+      $flash.fadeIn(400).delay(3500).fadeOut(600);
+    }
+  });
+</script>
+{% endblock javascripts %}
