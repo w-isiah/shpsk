@@ -15,10 +15,10 @@ class Config:
     SECRET_KEY = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
 
     # MySQL Configuration
-    MYSQL_HOST = os.getenv('MYSQL_HOST', 'shpsk.mysql.pythonanywhere-services.com')
-    MYSQL_USER = os.getenv('MYSQL_USER', 'shpsk')
-    MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'mine@1234')
-    MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'shpsk$default')
+    MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
+    MYSQL_USER = os.getenv('MYSQL_USER', 'root')
+    MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
+    MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'shpsk')
 
     @staticmethod
     def init_app(app):

@@ -164,6 +164,8 @@
                 <th>Item Number</th>
                 <th>Item Unique Number</th>
                 <th>Name</th>
+                <th>Department</th>
+                <th>Section</th>
                 <th>Quantity</th>
                 <th>Description</th>
                 <th>Image</th>
@@ -182,10 +184,11 @@
                 </td>
                 <td>{{ i.unique_number }}</td>
                 <td>
-                  {{ i.name }}<br>
-                  <small><strong><i>Department:</i></strong> {{ i.category_name }}</small>
+                  {{ i.name }}</td>
+                  <td> {{ i.category_name }} </td>
+                 <td>
                   {% if i.sub_category_name and i.sub_category_name != 'None' %}
-                  <br><small><strong><i>Section:</i></strong> {{ i.sub_category_name }}</small>
+                  {{ i.sub_category_name }}
                   {% endif %}
                 </td>
                 <td>{{ i.quantity }}</td>
