@@ -140,7 +140,14 @@
                     <option value="assistant_manager" {% if user.role == 'assistant_manager' %}selected{% endif %}>Assistant Inventory Manager</option>
                     <option value="Head_ICT" {% if user.role == 'Head_ICT' %}selected{% endif %}>Head ICT</option>
                     <option value="teacher" {% if user.role == 'teacher' %}selected{% endif %}>Teacher</option>
+                    <option value="dorm_master" {% if user.role == 'dorm_master' %}selected{% endif %}>Dorm Master</option>
+
                     <option value="headteacher" {% if user.role == 'headteacher' %}selected{% endif %}>Head Teacher</option>
+
+                    <option value="metron" {% if user.role == 'metron' %}selected{% endif %}>Dorm Matron</option>
+
+
+
                     <option value="other" {% if user.role == 'other' %}selected{% endif %}>Other</option>
                     <option value="dos" {% if user.role == 'dos' %}selected{% endif %}>Deputy of Studies</option>
                     <option value="co_ordinator" {% if user.role == 'co_ordinator' %}selected{% endif %}>Co-Ordinator</option>
