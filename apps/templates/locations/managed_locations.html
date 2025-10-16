@@ -97,7 +97,7 @@
                                     </a>
                                 </td>
                                 <td>
-                                    {% if session['role'] == 'super_admin' %}
+                                    {% if session['role'] == 'admin' %}
                                     <a href="{{ url_for('locations_blueprint.delete_location', location_id=loc.location_id) }}"
                                         class="btn btn-sm btn-danger"
                                         onclick="return confirm('Delete {{ loc.location_name }}? This will also unassign any assets linked to it.')"

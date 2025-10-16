@@ -125,19 +125,30 @@ def managed_locations():
 
 
 
+from flask import session, flash, redirect, url_for, render_template, request, current_app, Blueprint
+import mysql.connector
+import re
+
+# Assuming 'blueprint' is defined correctly elsewhere
 @blueprint.route('/add_location', methods=['GET', 'POST'])
 def add_location():
     """
-    Handles adding a new location. 
-    Parent locations are sourced *only* from the 'rooms' table, with column aliasing.
-    The Location Name field is now OPTIONAL.
-    """
+    Handles adding a new location.
     
+    CRITICAL CHANGE: Prevents inserting a new location if another location 
+    already exists with the exact same parent_location_id (i.e., prevents 
+    duplicate children/siblings under the specified parent).
+    """
+    if 'id' not in session:
+        flash("You must be logged in to access location management.", "warning")
+        return redirect(url_for('authentication_blueprint.login'))
+        
     connection = None
     cursor = None
     parent_locations = []
 
     try:
+        # Assuming get_db_connection() is available
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
 
@@ -155,61 +166,81 @@ def add_location():
         parent_locations = cursor.fetchall()
 
         if request.method == 'POST':
-            # Location Name is now allowed to be an empty string
+            # --- Get and Prepare Form Data ---
             name = request.form.get('name', '').strip()
             location_type = request.form.get('location_type', '').strip()
-            parent_location_id = request.form.get('parent_location_id', '') 
-
-            # Convert empty string to None/NULL for the database
-            parent_location_id = parent_location_id if parent_location_id else None
+            parent_location_id_str = request.form.get('parent_location_id', '') 
             
-            # If name is empty, ensure it's None for database insertion (if the column allows NULL)
-            # If your database column is NOT NULL, you must handle this by generating a name or stopping.
-            # Assuming it allows NULL or you'll handle blank names.
+            # Convert empty string to None/NULL for the database
+            parent_location_id = parent_location_id_str if parent_location_id_str else None
             db_name = name if name else None
 
-            # 2. Validation
-            # Removed: if not name...
+            # --- 2. Validation ---
             if not location_type:
                 flash("Location Type is required!", "warning")
-            # The regex check is only needed if a name is provided
             elif name and not re.match(r'^[A-Za-z0-9 _-]+$', name):
                 flash("Location name must contain only letters, numbers, spaces, dashes, or underscores.", "danger")
             else:
-                # 3. Database Operations
-                # Check for duplicate ONLY if a name was actually provided
+                # --- 3. Database Checks ---
+                
+                # Check A: Prevent duplicate name (if a name was provided)
                 if db_name:
-                    check_query = "SELECT * FROM locations WHERE name = %s"
-                    cursor.execute(check_query, (db_name,))
-                    existing = cursor.fetchone()
-
-                    if existing:
-                        flash(f"Location '{db_name}' already exists.", "warning")
-                        # If a name exists, we fall through to re-render the form
+                    check_name_query = "SELECT location_id FROM locations WHERE name = %s"
+                    cursor.execute(check_name_query, (db_name,))
+                    if cursor.fetchone():
+                        flash(f"Location '{db_name}' already exists. Please choose a different name.", "warning")
+                        # Re-render the template with the current parent locations loaded
                         return render_template("locations/add_location.html", parent_locations=parent_locations)
                 
-                # Insert the new location into the 'locations' table
+                # Check B: Prevent duplicate parent_location_id
+                if parent_location_id is None:
+                    # Check for existing top-level location (parent_location_id IS NULL)
+                    check_parent_query = "SELECT location_id FROM locations WHERE parent_location_id IS NULL"
+                    cursor.execute(check_parent_query)
+                else:
+                    # Check for existing child location under this specific parent
+                    check_parent_query = "SELECT location_id FROM locations WHERE parent_location_id = %s"
+                    cursor.execute(check_parent_query, (parent_location_id,))
+
+                if cursor.fetchone():
+                    # Get the parent's identifier for a better error message
+                    parent_id_display = parent_location_id if parent_location_id else "Top Level"
+                    flash(f"A location (parent ID: {parent_id_display}) already exists. Only one child entry is allowed per parent/room reference.", "danger")
+                    return render_template("locations/add_location.html", parent_locations=parent_locations)
+
+                # --- 4. Insertion ---
                 insert_query = "INSERT INTO locations (name, type, parent_location_id) VALUES (%s, %s, %s)"
                 cursor.execute(insert_query, (db_name, location_type, parent_location_id))
                 connection.commit()
                 flash(f"Location '{(db_name or location_type)}' successfully added!", "success")
                 return redirect(url_for('locations_blueprint.add_location'))
 
-        # If POST fails validation, execution continues here.
-        
     except mysql.connector.Error as err:
+        current_app.logger.error(f"MySQL Database error: {err}")
         flash(f"Database error: {err}", "danger")
         
     except Exception as e:
+        current_app.logger.error(f"An unexpected error occurred: {e}")
         flash(f"An unexpected error occurred: {str(e)}", "danger")
         
     finally:
-        if cursor: 
+        # Standard connection cleanup
+        if 'cursor' in locals() and cursor: 
             cursor.close()
-        if connection: 
+        if 'connection' in locals() and connection: 
             connection.close()
 
     return render_template("locations/add_location.html", parent_locations=parent_locations)
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -281,7 +312,7 @@ def delete_location(location_id):
     """Deletes a location from the database by its ID."""
     if 'role' not in session or session['role'] not in ['admin', 'super_admin']:
         flash("You do not have permission to perform this action.", "danger")
-        return redirect(url_for('blueprint.locations'))
+        return redirect(url_for('locations_blueprint.managed_locations'))
         
     connection = get_db_connection()
     cursor = connection.cursor()
@@ -293,7 +324,7 @@ def delete_location(location_id):
         
         if asset_count > 0:
             flash(f"Cannot delete location. {asset_count} fixed assets are still assigned to it.", "danger")
-            return redirect(url_for('blueprint.locations'))
+            return redirect(url_for('locations_blueprint.managed_locations'))
 
         # Check if any other locations use this location as a parent
         cursor.execute('SELECT COUNT(*) FROM locations WHERE parent_location_id = %s', (location_id,))
@@ -318,7 +349,13 @@ def delete_location(location_id):
         if cursor: cursor.close()
         if connection: connection.close()
 
-    return redirect(url_for('blueprint.locations'))
+    return redirect(url_for('locations_blueprint.managed_locations'))
+
+
+
+
+
+
 
 # --------------------------------------------------------------------------------------------------
 
