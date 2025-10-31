@@ -1,159 +1,145 @@
 {% extends "layouts/base.html" %}
 
-{% block title %}Add New Location{% endblock %}
+{% block title %} Add a Location {% endblock %}
 
-{% block body_class %}sidebar-mini layout-fixed layout-footer-fixed{% endblock %}
+{% block body_class %} sidebar-mini layout-footer-fixed {% endblock body_class %}
 
-{# --- Stylesheets --- #}
 {% block stylesheets %}
-{# Core AdminLTE and Select2 CSS #}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
 <link rel="stylesheet" href="/static/assets/plugins/fontawesome-free/css/all.min.css">
-<link rel="stylesheet" href="/static/assets/plugins/select2/css/select2.min.css">
-<link rel="stylesheet" href="/static/assets/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
 <link rel="stylesheet" href="/static/assets/css/adminlte.min.css">
-
-{# Custom style for fixed flash messages #}
 <style>
-    .alert-container {
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 9999;
-        width: 90%;
-        max-width: 600px;
-        display: none;
-    }
-</style>
-{% endblock %}
+  .alert-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    width: 80%;
+    display: none;
+  }
 
-{# --- Main Content --- #}
+  .alert {
+    opacity: 1;
+    transition: opacity 1s ease-out;
+    margin-bottom: 10px;
+  }
+
+  .alert.alert-dismissible {
+    padding-right: 30px;
+  }
+</style>
+{% endblock stylesheets %}
+
 {% block content %}
 <div class="content-wrapper">
 
-    {# Flash Messages (Reinstated Inline) #}
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="alert-container" id="flashMessageContainer">
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        <i class="icon fas fa-exclamation-triangle"></i> 
-                        <strong>{{ message }}</strong>
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="alert-container" id="flashMessageContainer">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            <strong>{{ message }}</strong>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
 
-    {# Content Header (Page header) #}
-    <section class="content-header">
-        <div class="container-fluid">
-            <div class="row mb-2">
-                <div class="col-sm-6">
-                    <h1>Add New Location</h1>
-                </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href='/index'>Home</a></li>
-                        <li class="breadcrumb-item"><a href="{{ url_for('locations_blueprint.managed_locations') }}">Locations</a></li>
-                        <li class="breadcrumb-item active">Add Location</li>
-                    </ol>
-                </div>
-            </div>
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1>Add a Location</h1>
         </div>
-    </section>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/index">Home</a></li>
+            <li class="breadcrumb-item"><a href="/locations">Locations</a></li> 
+            <li class="breadcrumb-item active">Add Location</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    {# Main Content Form #}
-    <section class="content">
-        <div class="container-fluid">
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h3 class="card-title">Define a New Location in the System</h3>
+  <section class="content">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h3 class="card-title mb-0">Add New Location</h3>
+              <div class="btn-group ms-auto" role="group">
+                <a href="/locations" class="btn btn-primary btn-sm">Location List</a> 
+                <a href="/inventory_index" class="btn btn-success btn-sm">Inventory Dashboard</a>
+              </div>
+            </div>
+
+            <form action="{{ url_for('locations_blueprint.add_location') }}" method="post"> 
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+              <div class="card-body">
+                <!-- Location Name -->
+                <div class="control-group mb-3">
+                  <label class="control-label" for="location-name">Location Name:</label>
+                  <div class="controls">
+                    <input type="text" id="location-name" name="name" placeholder="Enter Location Name (e.g., IT Lab, Hall)" 
+                      class="form-control form-control-sm border-info shadow-sm" required aria-describedby="location-name-help" />
+                    <span id="location-name-help" class="help-block text-muted">Please provide a name for the physical location.</span>
+                  </div>
                 </div>
 
-                <form action="{{ url_for('locations_blueprint.add_location') }}" method="POST">
-                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <!-- Room Dropdown -->
+                <div class="control-group mb-3">
+                  <label class="control-label" for="room-id">Room (optional):</label>
+                  <div class="controls">
+                    <select id="room-id" name="room_id" class="form-control form-control-sm border-info shadow-sm">
+                      <option value="">-- Select Room --</option>
+                      {% for room in rooms %}
+                        <option value="{{ room.room_id }}">{{ room.room_name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
 
-                    <div class="card-body">
-                        
-                        {# Location Name Input (Optional) #}
-                        <div class="form-group">
-                            <label for="name">Location Name (Optional)</label>
-                            <input type="text" name="name" id="name" class="form-control" 
-                                placeholder="Enter Location name (e.g., Shelf C, Desk 5)">
-                        </div>
+                <!-- Description -->
+                <div class="control-group mb-3">
+                  <label class="control-label" for="description">Description (optional):</label>
+                  <div class="controls">
+                    <textarea id="description" name="description" class="form-control form-control-sm border-info shadow-sm" rows="3" placeholder="Add additional notes about this location..."></textarea>
+                  </div>
+                </div>
 
-                        {# Location Type Dropdown (REQUIRED) #}
-                        <div class="form-group">
-                            <label for="location_type">Location Type <span class="text-danger">*</span></label>
-                            <select name="location_type" id="location_type" class="form-control select2bs4" style="width: 100%;" required>
-                                <option value="" disabled selected>Select Location Type</option>
-                                <option value="Building">Building/Block</option>
-                                <option value="Dormitory">Dormitory</option>
-                                <option value="Classroom">Classroom</option>
-                                <option value="Office">Office</option>
-                                <option value="Specialized Room">Specialized Room (Lab, Library, Store)</option>
-                                <option value="Outdoor">Outdoor Area (Playground, Field)</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
+              </div> <!-- /.card-body -->
 
-                        {# Parent Location Dropdown (Optional) #}
-                        <div class="form-group">
-                            <label for="parent_location_id">Parent Location (Optional)</label>
-                            <select name="parent_location_id" id="parent_location_id" class="form-control select2bs4" style="width: 100%;">
-                                <option value="" selected>No Parent / Top Level</option>
-                                {% for loc in parent_locations %}
-                                    <option value="{{ loc.location_id }}">{{ loc.name }} ({{ loc.type or 'N/A' }})</option>
-                                {% endfor %}
-                            </select>
-                            <small class="form-text text-muted">Example: If adding "Item Shelf 1", select a "Room" as the parent.</small>
-                        </div>
-                    </div>
+              <div class="card-footer">
+                <button type="submit" class="btn btn-sm btn-success" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">Save Location</button>
+              </div>
 
-                    {# Card Footer for Buttons #}
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Save Location
-                        </button>
-                        <a href="{{ url_for('locations_blueprint.managed_locations') }}" class="btn btn-default float-right">
-                            <i class="fas fa-times"></i> Cancel
-                        </a>
-                    </div>
-                </form>
-            </div>
+            </form>
+          </div>
         </div>
-    </section>
+      </div>
+    </div>
+  </section>
 </div>
-{% endblock %}
+{% endblock content %}
 
-{# --- JavaScripts --- #}
 {% block javascripts %}
-{# Core AdminLTE and Select2 JS dependencies #}
 <script src="/static/assets/plugins/jquery/jquery.min.js"></script>
 <script src="/static/assets/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="/static/assets/plugins/select2/js/select2.full.min.js"></script>
 <script src="/static/assets/js/adminlte.min.js"></script>
+<script src="/static/assets/js/demo.js"></script>
 
 <script>
-    $(document).ready(function () {
-        // Initialize Select2 with AdminLTE's Bootstrap 4 theme for proper styling
-        $('.select2bs4').select2({
-            theme: 'bootstrap4'
-        });
-        
-        // Flash message animation
-        const flashContainer = $('#flashMessageContainer');
-        if (flashContainer.length) {
-            flashContainer.fadeIn(300).delay(3000).fadeOut(1000, function() {
-                // Remove the element from DOM after fade out
-                $(this).remove(); 
-            });
-        }
-    });
+  $(document).ready(function() {
+    if ($('#flashMessageContainer').length) {
+      $('#flashMessageContainer').fadeIn(500).delay(3000).fadeOut(1000);
+    }
+  });
 </script>
-{% endblock %}
+{% endblock javascripts %}

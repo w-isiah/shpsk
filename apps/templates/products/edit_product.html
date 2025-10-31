@@ -194,42 +194,46 @@
   <!-- AdminLTE for demo purposes -->
   <script src="/static/assets/js/demo.js"></script>
 <script src="/static/assets/js/select2.min.js"></script>
+  
+
   <script>
-    // Function to load sub-categories based on selected category
-    function loadSubCategories() {
-      const categoryId = document.getElementById('category_id').value;
-      const subCategorySelect = document.getElementById('sub_category_id');
+$(document).ready(function() {
+  $('.select2').select2();
 
-      if (!categoryId) return;
+  // All sections passed from backend
+  let allSections = {{ sections|tojson }};
 
-       $('.select2').select2();
+  function updateSections() {
+    const deptId = $('#department_id').val();
+    const sectionSelect = $('#section_id');
 
-      // Make AJAX request to fetch sub-categories for the selected category
-      fetch('/subc_data?category_id=' + categoryId)
-        .then(response => response.json())
-        .then(subCategories => {
-          // Clear existing options
-          subCategorySelect.innerHTML = '<option value="" disabled selected>Select a Section</option>';
+    // Clear existing options
+    sectionSelect.empty().append('<option value="">Select Section</option>');
 
-          // Populate sub-category dropdown based on selected category
-          subCategories.forEach(subCategory => {
-            const option = document.createElement('option');
-            option.value = subCategory.sub_category_id;
-            option.textContent = subCategory.name;
-            subCategorySelect.appendChild(option);
-          });
-        })
-        .catch(error => console.error('Error fetching Sections:', error));
-    }
-
-    // Automatically load sub-categories if category is already selected
-    window.onload = function() {
-      const categoryId = document.getElementById('category_id').value;
-      if (categoryId) {
-        loadSubCategories();
+    // Populate sections based on selected department
+    allSections.forEach(s => {
+      if (!deptId || s.department_id == deptId) {
+        const selected = s.section_id == {{ asset.section_id|default('null') }} ? 'selected' : '';
+        sectionSelect.append(`<option value="${s.section_id}" ${selected}>${s.name}</option>`);
       }
-    }
-  </script>
+    });
+
+    // Refresh Select2
+    sectionSelect.select2();
+  }
+
+  // Trigger update on page load if a department is already selected
+  if ($('#department_id').val()) {
+    updateSections();
+  }
+
+  // Bind change event
+  $('#department_id').on('change', updateSections);
+});
+</script>
+
+
+
   {% endblock %}
 </div>
 {% endblock %}
