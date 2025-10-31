@@ -192,7 +192,7 @@ def add_fixed_asset():
         suppliers = cursor.fetchall()
 
         cursor.execute("SELECT id, CONCAT(first_name, ' ', last_name) AS name FROM users ORDER BY first_name, last_name")
-        users = cursor.fetchall()  # formerly custodians
+        users = cursor.fetchall()
 
         # Generate unique IdentificationNumber
         random_num = random.randint(1005540, 9978799)
@@ -203,26 +203,58 @@ def add_fixed_asset():
             random_num = random.randint(1005540, 9978799)
 
         if request.method == 'POST':
-            # Retrieve form values
+            # Validate required fields
+            required_fields = ['description', 'department_id', 'ownership_status', 'asset_condition']
+            missing_fields = []
+            for field in required_fields:
+                if not request.form.get(field):
+                    field_name = field.replace('_', ' ').title()
+                    missing_fields.append(field_name)
+            
+            if missing_fields:
+                flash(f"❌ Missing required fields: {', '.join(missing_fields)}", "danger")
+                return render_template(
+                    'fixed_assets/add_fixed_asset.html',
+                    departments=departments,
+                    sections=sections,
+                    suppliers=suppliers,
+                    users=users,
+                    random_num=random_num,
+                    segment='add_fixed_asset'
+                )
+
+            # Retrieve and sanitize form values
             identification_number = request.form.get('identification_number') or random_num
-            serial_number = request.form.get('serial_number')
-            description = request.form.get('description')
+            serial_number = request.form.get('serial_number', '').strip()
+            serial_number = serial_number if serial_number else None
+            description = request.form.get('description', '').strip()
             department_id = request.form.get('department_id')
-            section_id = request.form.get('section_id') or None
-            supplier_id = request.form.get('supplier_id') or None
-            user_id = request.form.get('user_id') or None  # updated field
+            section_id = request.form.get('section_id')
+            section_id = section_id if section_id else None
+            supplier_id = request.form.get('supplier_id')
+            supplier_id = supplier_id if supplier_id else None
+            user_id = request.form.get('user_id')
+            user_id = user_id if user_id else None
             ownership_status = request.form.get('ownership_status')
             asset_condition = request.form.get('asset_condition')
 
             # Handle image upload
             image_file = request.files.get('image')
             image_filename = None
-            if image_file and allowed_file(image_file.filename):
-                filename = secure_filename(image_file.filename)
-                image_filename = f"{identification_number}_{filename}"
-                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'])
-                os.makedirs(upload_folder, exist_ok=True)
-                image_file.save(os.path.join(upload_folder, image_filename))
+            if image_file and image_file.filename:
+                if allowed_file(image_file.filename):
+                    try:
+                        filename = secure_filename(image_file.filename)
+                        image_filename = f"{identification_number}_{filename}"
+                        upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'])
+                        os.makedirs(upload_folder, exist_ok=True)
+                        image_path = os.path.join(upload_folder, image_filename)
+                        image_file.save(image_path)
+                    except Exception as e:
+                        current_app.logger.error(f"Image upload failed: {str(e)}")
+                        flash("⚠️ Error saving image file", "warning")
+                else:
+                    flash("⚠️ Invalid file type. Please upload JPG, PNG, GIF, or WEBP image.", "warning")
 
             # Insert new asset into database
             cursor.execute('''
@@ -231,17 +263,35 @@ def add_fixed_asset():
                  SupplierID, user_id, OwnershipStatus, AssetCondition, image)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ''', (
-                identification_number, serial_number, description, department_id, section_id,
-                supplier_id, user_id, ownership_status, asset_condition, image_filename
+                identification_number, 
+                serial_number, 
+                description, 
+                department_id, 
+                section_id,
+                supplier_id, 
+                user_id, 
+                ownership_status, 
+                asset_condition, 
+                image_filename
             ))
+
+            # Log the asset creation
+            current_user_id = session.get('id')
+            if current_user_id:
+                cursor.execute('''
+                    INSERT INTO asset_logs (asset_id, user_id, action, log_date, remarks)
+                    VALUES (%s, %s, %s, NOW(), %s)
+                ''', (cursor.lastrowid, current_user_id, 'create', 'New asset created'))
+
             conn.commit()
 
-            flash("Fixed Asset successfully added!", "success")
+            flash("✅ Fixed Asset added successfully!", "success")
             return redirect(url_for('fixed_assets_blueprint.fixed_assets'))
 
     except Exception as e:
         conn.rollback()
-        flash(f"Error adding asset: {str(e)}", "danger")
+        current_app.logger.error(f"Error adding fixed asset: {str(e)}")
+        flash(f"❌ Error adding asset: {str(e)}", "danger")
 
     finally:
         cursor.close()
@@ -252,12 +302,10 @@ def add_fixed_asset():
         departments=departments,
         sections=sections,
         suppliers=suppliers,
-        users=users,  # updated for user_id dropdown
+        users=users,
         random_num=random_num,
         segment='add_fixed_asset'
     )
-
-
 
 
 
